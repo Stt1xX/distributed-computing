@@ -15,6 +15,8 @@ extern int cpid;
 
 void create_pipes(void);
 
-void init_process(struct Process* process);
+void init_proc(struct Process* process);
+void start_proc_sync(struct Process* process);
+void end_proc_sync(struct Process* process);
 
 #endif

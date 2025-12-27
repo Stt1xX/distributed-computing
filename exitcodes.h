@@ -1,13 +1,14 @@
 #ifndef EXIT_CODES_H
 #define EXIT_CODES_H
 
-enum exit_codes {
+enum ExitCodes {
     EXIT_OK = 0,
     EXIT_PARAM_PARSE_ERROR,
     EXIT_FORK_ERROR,
     EXIT_MEMORY_ALLOCATION_ERROR,
     EXIT_PIPE_CREATION_ERROR,
-    EXIT_IPC_ERROR
+    EXIT_IPC_ERROR,
+    EXIT_LOG_FILE_OPEN_ERROR
 };
 
 #endif
