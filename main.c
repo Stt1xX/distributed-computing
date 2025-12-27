@@ -6,6 +6,7 @@
 #include "exitcodes.h"
 #include "utils.h"
 #include "pc.h"
+#include "ipc.h"
 
 struct Process process;
 
@@ -20,15 +21,31 @@ int main(int args, char **argv) {
         exit(EXIT_FORK_ERROR);
       } else if (pid == 0) {
         init_process(&process);
-        printf("Hello, i am child my pid %d\n", process.pid);
-        print_int_arr(process.read_pipes, sizeof(process.read_pipes));
-        print_int_arr(process.write_pipes, sizeof(process.write_pipes));
+        // create test message
+
+        Message msg;
+        msg = (Message) {
+            .s_header = {
+                .s_magic = MESSAGE_MAGIC,
+                .s_payload_len = 5,
+                .s_type = 1,
+                .s_local_time = 0
+            },
+            .s_payload = "Hello"
+        };
+        send(&process, PARENT_ID, &msg);
         break;
       } else if (pid > 0) {
         cpid++;
-        printf("Hello, i am parent my pid %d and now i am creating child %d\n", process.pid, pid);
+        // parent proc stuff
         continue;
       }
     }
+    Message received_msg;
+    if (process.pid == PARENT_ID) {
+        receive(&process, 1, &received_msg);
+        printf("Parent received message: %s\n", received_msg.s_payload);
+    }
+
     return 0;
 }

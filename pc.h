@@ -4,12 +4,13 @@
 #include "ipc.h"
 
 struct Process {
-    int pid;
+    local_id pid;
     int read_pipes[MAX_PROCESS_ID + 1];
     int write_pipes[MAX_PROCESS_ID + 1];
 };
 
 extern int pc;
+extern int const NO_PIPE;
 extern int cpid;
 
 void create_pipes(void);

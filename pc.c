@@ -5,7 +5,8 @@
 #include "exitcodes.h"
 
 int cpid = 0;
-// static const int MAX_PROCESS_COUNT = MAX_PROCESS_ID + 1;
+static const int MAX_PROCESS_COUNT = MAX_PROCESS_ID + 1;
+const int NO_PIPE = -1;
 int pc = 0;
 static int *pipe_matrix = NULL;
 
@@ -35,11 +36,15 @@ static void set_write_pipes(int pid, int* out_arr){
 
 static void set_read_pipes(int pid, int* out_arr){
     for (int i = 0; i < pc; i++) {
-        out_arr[i] = (pipe_matrix + ((pid * pc + i) * 2))[0];
+        out_arr[i] = (pipe_matrix + ((i * pc + pid) * 2))[0];
     }
 }
 
 void init_process(struct Process* process){
+    for (int i = 0; i < MAX_PROCESS_COUNT; i++){
+        process->read_pipes[i] = NO_PIPE;
+        process->write_pipes[i] = NO_PIPE;
+    }
     process->pid = cpid++;
     set_read_pipes(process->pid, process->read_pipes);
     set_write_pipes(process->pid, process->write_pipes);
