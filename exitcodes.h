@@ -1,0 +1,12 @@
+#ifndef EXIT_CODES_H
+#define EXIT_CODES_H
+
+enum exit_codes {
+    EXIT_OK = 0,
+    EXIT_PARAM_PARSE_ERROR,
+    EXIT_FORK_ERROR,
+    EXIT_MEMORY_ALLOCATION_ERROR,
+    EXIT_PIPE_CREATION_ERROR
+};
+
+#endif
