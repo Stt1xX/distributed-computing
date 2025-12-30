@@ -27,8 +27,6 @@ void create_pipes (void) {
                 if (pipe(fd) == -1) {
                     exit_pc(EXIT_PIPE_CREATION_ERROR);
                 }
-                int flags = fcntl(*fd, F_GETFL); // non-blocking reading
-                fcntl(*fd, F_SETFL, flags | O_NONBLOCK);
             } else {
                 fd[0] = NO_PIPE;
                 fd[1] = NO_PIPE;
@@ -49,46 +47,63 @@ static void set_read_pipes(int pid, int* out_arr){
     }
 }
 
-void init_proc(struct Process* process){
+void init_proc(struct Process* process, int st_msgs_expected, int dn_msgs_expected){
     for (int i = 0; i < MAX_PROCESS_COUNT; i++){
         process->read_pipes[i] = NO_PIPE;
         process->write_pipes[i] = NO_PIPE;
-    }
+    }   
+    process->st_msgs_expected = st_msgs_expected;
+    process->dn_msgs_expected = dn_msgs_expected;
     process->pid = cpid++;
     set_read_pipes(process->pid, process->read_pipes);
     set_write_pipes(process->pid, process->write_pipes);
 }
 
-void start_proc_sync(struct Process* process){
-    Message msg = build_started_msg(process);
-    log_event(msg.s_payload);
-    if (send_multicast(process, &msg) != 0) {
-        exit_pc(EXIT_IPC_ERROR);
-    }
+int receive_all(struct Process* process, MessageType msg_type_wait_for){ // blocked receive
+    Message rcv_msg; // ignore payload for now
+    int* counter_lnk = NULL;
+    if (msg_type_wait_for == STARTED) counter_lnk = &process->st_msgs_expected;
+    else counter_lnk = &process->dn_msgs_expected;
 
-    for( int i = 0; i < pc - 2;) {
-        Message rcv_msg;
-        if (receive_any(process, &rcv_msg) == 0) {
-            if (rcv_msg.s_header.s_type == STARTED) {
-                i++;
+    while (*counter_lnk > 0){
+        if (receive_any(process, &rcv_msg) != -1){
+            switch (rcv_msg.s_header.s_type){
+                case STARTED:
+                    process->st_msgs_expected--;
+                    break;
+                case DONE:
+                    process->dn_msgs_expected--;
+                    break;
             }
         }
     }
+    return 0;
+}
+
+void start_proc_sync(struct Process* process){
+    Message msg = build_started_msg(process);
+    if (send_multicast(process, &msg) != 0) {
+        exit_pc(EXIT_IPC_ERROR);
+    }
+    log_event(msg.s_payload);
+
     msg = build_received_all_started_msg(process);
+    if (receive_all(process, STARTED) != 0) {
+        exit_pc(EXIT_IPC_ERROR);
+    }
     log_event(msg.s_payload);
 }
 
 void end_proc_sync(struct Process* process){
-    char payload[MAX_PAYLOAD_LEN];
-    snprintf(payload, sizeof(payload), log_done_fmt, process->pid);
-    Message msg = {
-        .s_header = {
-            .s_magic = MESSAGE_MAGIC,
-            .s_payload_len = strlen(payload),
-            .s_type = DONE,
-            .s_local_time = 0 // ignored for now
-        }
-    };
-    memcpy(msg.s_payload, payload, strlen(payload));
-    send_multicast(process, &msg);
+    Message msg = build_done_msg(process);
+    if (send_multicast(process, &msg) != 0) {
+        exit_pc(EXIT_IPC_ERROR);
+    }
+    log_event(msg.s_payload);
+
+    msg = build_received_all_done_msg(process);
+    if (receive_all(process, DONE) != 0) {
+        exit_pc(EXIT_IPC_ERROR);
+    }
+    log_event(msg.s_payload);
 }

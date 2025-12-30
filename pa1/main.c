@@ -16,24 +16,25 @@ int main(int args, char **argv) {
     pc = parse_process_count(args, argv) + 1; // +1 for parent process
     open_log_file();
     create_pipes();
-    init_proc(&process); // initialize parent process
+    init_proc(&process, pc - 1, pc - 1); // initialize parent process
     for (int i = 0; i < pc - 1; i++) {
       pid_t pid = fork();
       if (pid < 0) {
           exit_pc(EXIT_FORK_ERROR);
       } else if (pid == 0) {
-          init_proc(&process);
+          init_proc(&process, pc - 2, pc - 2);
           start_proc_sync(&process);
-          // skip working for child processes for now
-        //   end_proc_sync(&process);
+        //   skip working for child processes for now
+          end_proc_sync(&process);
           break;
-      } else if (pid > 0) {
+      } else if (pid > 0) { // parent stuff
           cpid++;
-          // parent proc stuff
           continue;
       }
     }
     if (process.pid == PARENT_ID) {
+        receive_all(&process, STARTED); // wait for all children to start
+        receive_all(&process, DONE); // wait for all children to finish
         while (wait(NULL) > 0);
     }
     close_log_file();

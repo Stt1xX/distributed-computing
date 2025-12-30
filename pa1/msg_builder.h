@@ -6,5 +6,6 @@
 Message build_started_msg(struct Process *process);
 Message build_done_msg(struct Process *process);
 Message build_received_all_started_msg(struct Process *process);
+Message build_received_all_done_msg(struct Process *process);
 
 #endif

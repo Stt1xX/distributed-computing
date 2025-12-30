@@ -88,6 +88,6 @@ void exit_pc(enum ExitCodes code){
             exit(EXIT_LOG_FILE_OPEN_ERROR);
         default:
             fprintf(stderr, "Unknown exit code\n");
-            exit(EXIT_IPC_ERROR);
+            exit(0);
     }
 }
